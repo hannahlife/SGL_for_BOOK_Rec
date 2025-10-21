@@ -346,70 +346,64 @@ class SGL(AbstractRecommender):
         users = torch.from_numpy(np.asarray(users)).long().to(self.device)
         return self.lightgcn.predict(users).cpu().detach().numpy()
     
-    #生成推荐信息文件
     def generate_top1_class_for_test(self, test_data, output_file="user_top1_class.csv"):
         """
-    为测试集用户生成每个用户最推荐的类别（Top-1 class），并保存为 CSV 文件。
-
-    参数：
-        test_data: 可以是文件路径（.csv 或 .test），或者是包含用户-项目对的数组
-        output_file: str, 输出文件路径
+        为所有用户生成每个用户最推荐的类别（Top-1 class），并保存为 CSV 文件。
+        
+        参数：
+            test_data: 文件路径（.csv 或 .test）或包含用户-项目对的数组
+            output_file: str, 输出文件路径
         """
-
-    # 如果 test_data 是字符串，假设它是文件路径
+        # 如果 test_data 是字符串，从文件加载
         if isinstance(test_data, str):
             print(f"从文件加载测试数据: {test_data}")
-        # 支持 .csv 和 .test 文件
             if test_data.endswith('.csv') or test_data.endswith('.test'):
-            # 加载文件，无表头
                 test_array = np.loadtxt(test_data, delimiter=',', dtype=int)
-                test_users = np.unique(test_array[:, 0])  # 第一列是用户ID
+                test_users = np.unique(test_array[:, 0])
             else:
                 raise ValueError(f"不支持的文件格式: {test_data}")
-    # 如果 test_data 是 numpy 数组
         elif isinstance(test_data, np.ndarray):
             print("test_data 是 numpy 数组")
-            test_users = np.unique(test_data[:, 0])  # 第一列是用户ID
-    # 如果 test_data 是 pandas DataFrame
+            test_users = np.unique(test_data[:, 0])
         elif hasattr(test_data, 'iloc'):
             print("test_data 是 DataFrame")
-            test_users = np.unique(test_data.iloc[:, 0])  # 第一列是用户ID
+            test_users = np.unique(test_data.iloc[:, 0])
         else:
             raise ValueError(f"不支持的 test_data 类型: {type(test_data)}")
-
+        
         print(f"找到 {len(test_users)} 个测试用户")
         print(f"用户ID范围: {test_users.min()} - {test_users.max()}")
-
-    # 确保用户ID在有效范围内
+        
+        # 确保用户ID在有效范围内
         test_users = test_users[test_users < self.num_users]
         print(f"过滤后剩余 {len(test_users)} 个有效用户（在 0-{self.num_users-1} 范围内）")
-
+        
         if len(test_users) == 0:
             raise ValueError("没有找到有效的测试用户")
-
+        
         test_users_tensor = torch.from_numpy(test_users).long().to(self.device)
-
-    # 切换模型为 eval，并确保 embeddings 已计算
+        
+        # 切换模型为 eval 模式，并确保 embeddings 已计算
         self.lightgcn.eval()
         if self.lightgcn._user_embeddings_final is None or self.lightgcn._item_embeddings_final is None:
             self.lightgcn._user_embeddings_final, self.lightgcn._item_embeddings_final = \
                 self.lightgcn._forward_gcn(self.lightgcn.norm_adj)
-
-        # 预测每个用户对所有项目的评分
+        
+        # 预测每个用户对所有类别的评分
         with torch.no_grad():
-            scores = self.lightgcn.predict(test_users_tensor)  # [num_users, num_items]
-
-        # 每个用户取评分最高的项目
+            scores = self.lightgcn.predict(test_users_tensor).cpu().numpy()
+        
+        # 每个用户取评分最高的类别
         top_items = np.argmax(scores, axis=1)
-
+        
         # 保存结果到 CSV
         recommend_df = pd.DataFrame({
             'user_id': test_users,
             'recommended_item': top_items
         })
         recommend_df.to_csv(output_file, index=False)
-        print(f"生成用户-推荐项目文件完成，路径：{output_file}")
+        print(f"\n生成用户-推荐类别文件完成，路径：{output_file}")
         print(f"生成的推荐数量：{len(recommend_df)}")
-        print("前5条推荐记录：")
-        print(recommend_df.head())
+        print("\n前10条推荐记录：")
+        print(recommend_df.head(10))
 
