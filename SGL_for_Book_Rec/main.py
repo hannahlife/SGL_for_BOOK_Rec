@@ -65,21 +65,12 @@ if __name__ == "__main__":
     recommender = Recommender(config)
     recommender.train_model()
     
-    # 训练完成后生成 Top-1 类别推荐文件
-    print("\n" + "="*50)
-    print("开始生成用户推荐结果...")
-    print("="*50)
+    # 训练完成后为所有600个用户生成推荐（使用原始用户ID）
+    user_mapping_file = "dataset/my_book_2class/user2id_map.csv"
+    output_file = "dataset/my_book_2class/user_recommendations.csv"
     
-    # 使用相对路径指向测试数据
-    test_data_path = "dataset/my_book_2class/my_book_2class.test"
-    output_file = "dataset/my_book_2class/user_top1_class.csv"
-    
-    recommender.generate_top1_class_for_test(
-        test_data_path, 
+    recommender.generate_top1_class_for_all_users(
+        user_mapping_file=user_mapping_file,
         output_file=output_file
     )
-    
-    print("\n" + "="*50)
-    print(f"推荐结果已成功保存到: {output_file}")
-    print("="*50)
 

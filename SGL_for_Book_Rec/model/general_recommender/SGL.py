@@ -346,64 +346,85 @@ class SGL(AbstractRecommender):
         users = torch.from_numpy(np.asarray(users)).long().to(self.device)
         return self.lightgcn.predict(users).cpu().detach().numpy()
     
-    def generate_top1_class_for_test(self, test_data, output_file="user_top1_class.csv"):
+    def generate_top1_class_for_all_users(self, user_mapping_file, output_file="user_top1_class.csv"):
         """
         为所有用户生成每个用户最推荐的类别（Top-1 class），并保存为 CSV 文件。
+        输出文件包含原始用户ID和推荐的书籍类别。
         
         参数：
-            test_data: 文件路径（.csv 或 .test）或包含用户-项目对的数组
+            user_mapping_file: str, 用户映射文件路径（user2id_map.csv）
             output_file: str, 输出文件路径
         """
-        # 如果 test_data 是字符串，从文件加载
-        if isinstance(test_data, str):
-            print(f"从文件加载测试数据: {test_data}")
-            if test_data.endswith('.csv') or test_data.endswith('.test'):
-                test_array = np.loadtxt(test_data, delimiter=',', dtype=int)
-                test_users = np.unique(test_array[:, 0])
-            else:
-                raise ValueError(f"不支持的文件格式: {test_data}")
-        elif isinstance(test_data, np.ndarray):
-            print("test_data 是 numpy 数组")
-            test_users = np.unique(test_data[:, 0])
-        elif hasattr(test_data, 'iloc'):
-            print("test_data 是 DataFrame")
-            test_users = np.unique(test_data.iloc[:, 0])
-        else:
-            raise ValueError(f"不支持的 test_data 类型: {type(test_data)}")
+        print("\n" + "="*60)
+        print("开始为所有用户生成推荐...")
+        print("="*60)
         
-        print(f"找到 {len(test_users)} 个测试用户")
-        print(f"用户ID范围: {test_users.min()} - {test_users.max()}")
+        # 1. 加载用户映射文件（原始用户ID -> 新用户ID）
+        print(f"\n[1/4] 加载用户映射文件: {user_mapping_file}")
+        user_map_df = pd.read_csv(user_mapping_file)
+        # 第一列是原始用户ID，第二列是新用户ID（0, 1, 2, ...）
+        original_user_ids = user_map_df.iloc[:, 0].values  # 原始用户ID
+        new_user_ids = user_map_df.iloc[:, 1].values        # 新用户ID（0-599）
         
-        # 确保用户ID在有效范围内
-        test_users = test_users[test_users < self.num_users]
-        print(f"过滤后剩余 {len(test_users)} 个有效用户（在 0-{self.num_users-1} 范围内）")
+        print(f"   ✓ 加载了 {len(original_user_ids)} 个用户的映射关系")
+        print(f"   ✓ 原始用户ID范围: {original_user_ids.min()} - {original_user_ids.max()}")
+        print(f"   ✓ 新用户ID范围: {new_user_ids.min()} - {new_user_ids.max()}")
         
-        if len(test_users) == 0:
-            raise ValueError("没有找到有效的测试用户")
+        # 确保新用户ID在有效范围内
+        valid_mask = new_user_ids < self.num_users
+        new_user_ids = new_user_ids[valid_mask]
+        original_user_ids = original_user_ids[valid_mask]
         
-        test_users_tensor = torch.from_numpy(test_users).long().to(self.device)
+        print(f"   ✓ 有效用户数: {len(new_user_ids)}")
+        
+        if len(new_user_ids) == 0:
+            raise ValueError("没有找到有效的用户")
+        
+        # 2. 准备模型预测
+        print(f"\n[2/4] 准备模型进行预测...")
+        new_user_ids_tensor = torch.from_numpy(new_user_ids).long().to(self.device)
         
         # 切换模型为 eval 模式，并确保 embeddings 已计算
         self.lightgcn.eval()
         if self.lightgcn._user_embeddings_final is None or self.lightgcn._item_embeddings_final is None:
+            print("   ✓ 计算最终的用户和物品embeddings...")
             self.lightgcn._user_embeddings_final, self.lightgcn._item_embeddings_final = \
                 self.lightgcn._forward_gcn(self.lightgcn.norm_adj)
         
-        # 预测每个用户对所有类别的评分
+        # 3. 预测每个用户对所有类别的评分
+        print(f"\n[3/4] 为 {len(new_user_ids)} 个用户生成推荐...")
         with torch.no_grad():
-            scores = self.lightgcn.predict(test_users_tensor).cpu().numpy()
+            scores = self.lightgcn.predict(new_user_ids_tensor).cpu().numpy()
         
         # 每个用户取评分最高的类别
-        top_items = np.argmax(scores, axis=1)
+        top_class_ids = np.argmax(scores, axis=1)
+        print(f"   ✓ 推荐生成完成")
         
-        # 保存结果到 CSV
+        # 4. 保存结果到 CSV（使用原始用户ID）
+        print(f"\n[4/4] 保存推荐结果...")
         recommend_df = pd.DataFrame({
-            'user_id': test_users,
-            'recommended_item': top_items
+            'user_id': original_user_ids,         # 原始用户ID
+            'recommended_class': top_class_ids    # 推荐的书籍类别
         })
+        
+        # 按原始用户ID排序
+        recommend_df = recommend_df.sort_values('user_id').reset_index(drop=True)
+        
+        # 保存为CSV
         recommend_df.to_csv(output_file, index=False)
-        print(f"\n生成用户-推荐类别文件完成，路径：{output_file}")
-        print(f"生成的推荐数量：{len(recommend_df)}")
-        print("\n前10条推荐记录：")
-        print(recommend_df.head(10))
+        
+        print("="*60)
+        print(f"✓ 推荐结果已保存到: {output_file}")
+        print(f"✓ 总共生成 {len(recommend_df)} 条推荐记录")
+        print("="*60)
+        
+        print("\n前10条推荐记录（原始用户ID）：")
+        print(recommend_df.head(10).to_string(index=False))
+        
+        # 统计信息
+        print(f"\n推荐类别统计:")
+        print(f"  - 推荐的不同类别数: {recommend_df['recommended_class'].nunique()}")
+        print(f"  - 类别ID范围: {recommend_df['recommended_class'].min()} - {recommend_df['recommended_class'].max()}")
+        
+        return recommend_df
 
