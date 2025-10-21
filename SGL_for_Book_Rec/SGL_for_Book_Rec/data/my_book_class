@@ -1,0 +1,36 @@
+import pandas as pd
+
+# 1. 读取 item.csv 和 inter_preliminary.csv
+item_df = pd.read_csv("item.csv")
+inter_df = pd.read_csv("inter_preliminary.csv")
+
+# 2. 获取每个一级分类对应的类别编号，从0开始编号
+class_map = {cls: idx for idx, cls in enumerate(item_df["一级分类"].unique())}
+
+# 3. 将一级分类映射到书籍ID
+item_df["class"] = item_df["一级分类"].map(class_map)
+
+# 4. 选取我们需要的字段（book_id, class）
+item_class_df = item_df[["book_id", "class"]]
+
+# 5. 将 class 信息合并到 inter_preliminary 数据中
+inter_with_class = inter_df.merge(item_class_df, on="book_id", how="left")
+
+# 6. 检查是否存在未匹配的书籍（即 item.csv 中缺失的 book_id）
+missing_books = inter_with_class[inter_with_class["class"].isna()]["book_id"].unique()
+if len(missing_books) > 0:
+    print(f"注意：有 {len(missing_books)} 个 book_id 在 item.csv 中未找到对应分类。")
+    print("示例缺失 book_id:", missing_books[:10])
+else:
+    print("所有 book_id 都成功匹配到分类。")
+
+# 7. 保存新的数据文件
+output_file = "inter_preliminary_with_class.csv"
+inter_with_class.to_csv(output_file, index=False, encoding="utf-8-sig")
+
+# 8. 打印基本统计信息
+print("\n=== 分类结果 ===")
+print("一级分类总数：", len(class_map))
+print("分类编号映射示例：")
+for k, v in list(class_map.items())[:]:
+    print(f"  类别编号 {v} -> {k}")
