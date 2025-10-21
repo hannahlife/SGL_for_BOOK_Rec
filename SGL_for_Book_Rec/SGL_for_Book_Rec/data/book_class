@@ -1,0 +1,47 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+# === 1. 读取包含 class 列的数据 ===
+df = pd.read_csv("inter_preliminary_with_class.csv")
+
+# === 2. 提取 user_id 和 class 两列，并去重 ===
+df = df[['user_id', 'class']].dropna().drop_duplicates()
+
+# === 3. 将用户重新编号（从0开始） ===
+user2id = {u: i for i, u in enumerate(df['user_id'].unique())}
+df['user_id'] = df['user_id'].map(user2id)
+
+# === 4. 按用户划分训练集和测试集 ===
+train_rows, test_rows = [], []
+
+for user, group in df.groupby('user_id'):
+    if len(group) > 1:
+        test_sample = group.sample(n=1, random_state=42)
+        train_sample = group.drop(test_sample.index)
+    else:
+        # 单交互用户：同时保留在训练集和测试集中
+        test_sample = group.copy()
+        train_sample = group.copy()
+
+    train_rows.append(train_sample)
+    test_rows.append(test_sample)
+
+train_df = pd.concat(train_rows)
+test_df = pd.concat(test_rows)
+
+# === 重命名列为 SGL 要求格式 ===
+train_df.columns = ['user_id', 'class']
+test_df.columns = ['user_id', 'class']
+
+# === 确保类型一致 ===
+train_df = train_df.astype({'user_id': int, 'class': int})
+test_df = test_df.astype({'user_id': int, 'class': int})
+
+# === 保存 ===
+train_df.to_csv("dataset/my_book_class/my_book_class.train", index=False, header=False)
+test_df.to_csv("dataset/my_book_class/my_book_class.test", index=False, header=False)
+
+# === 打印统计信息 ===
+print(f"训练集: {len(train_df)} 条, 测试集: {len(test_df)} 条")
+print(f"用户总数: {len(user2id)}")
+print(f"类别（class）总数: {df['class'].nunique()}")

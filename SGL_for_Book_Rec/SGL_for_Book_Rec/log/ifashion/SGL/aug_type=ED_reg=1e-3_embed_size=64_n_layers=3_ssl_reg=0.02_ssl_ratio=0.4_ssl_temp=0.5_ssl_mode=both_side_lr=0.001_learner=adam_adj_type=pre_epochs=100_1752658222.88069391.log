@@ -1,0 +1,59 @@
+2025-07-16 17:30:22.881: my pid: 18512
+2025-07-16 17:30:22.882: model: model.general_recommender.SGL
+2025-07-16 17:30:22.882: Dataset statistics:
+Name: ifashion
+The number of users: 300000
+The number of items: 81614
+The number of ratings: 1607813
+Average actions of users: 5.36
+Average actions of items: 19.70
+The sparsity of the dataset: 99.993433%
+
+The number of training: 1255447
+The number of validation: 0
+The number of testing: 352366
+2025-07-16 17:30:22.883: NeuRec:[NeuRec]:
+recommender=SGL
+dataset=ifashion
+file_column=UI
+sep=','
+gpu_id=0
+gpu_mem=0.99
+metric=["Precision", "Recall", "NDCG"]
+top_k=[20]
+test_thread=8
+test_batch_size=128
+seed=2021
+start_testing_epoch=0
+
+SGL:[hyperparameters]:
+aug_type=ED
+reg=1e-3
+embed_size=64
+n_layers=3
+ssl_reg=0.02
+ssl_ratio=0.4
+ssl_temp=0.5
+ssl_mode=both_side
+lr=0.001
+learner=adam
+adj_type=pre
+epochs=1000
+batch_size=2048
+num_negatives=1
+param_init=xavier_uniform
+stddev=0.01
+verbose=1
+stop_cnt=10
+pretrain_flag=0
+save_flag=0
+
+Command line:
+recommender=SGL
+dataset=ifashion
+aug_type=ED
+reg=1e-3
+n_layers=3
+ssl_reg=0.02
+ssl_ratio=0.4
+ssl_temp=0.5
