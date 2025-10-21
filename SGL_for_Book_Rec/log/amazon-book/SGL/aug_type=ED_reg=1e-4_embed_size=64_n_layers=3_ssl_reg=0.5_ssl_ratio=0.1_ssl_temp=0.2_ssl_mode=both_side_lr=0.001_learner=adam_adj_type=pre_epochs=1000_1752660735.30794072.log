@@ -1,0 +1,75 @@
+2025-07-16 18:12:15.308: my pid: 550233
+2025-07-16 18:12:15.309: model: model.general_recommender.SGL
+2025-07-16 18:12:15.309: Dataset statistics:
+Name: amazon-book
+The number of users: 52643
+The number of items: 91599
+The number of ratings: 2984108
+Average actions of users: 56.69
+Average actions of items: 32.58
+The sparsity of the dataset: 99.938115%
+
+The number of training: 2380730
+The number of validation: 0
+The number of testing: 603378
+2025-07-16 18:12:15.309: NeuRec:[NeuRec]:
+recommender=SGL
+dataset=amazon-book
+file_column=UI
+sep=','
+gpu_id=0
+gpu_mem=0.99
+metric=["Precision", "Recall", "NDCG"]
+top_k=[20]
+test_thread=8
+test_batch_size=128
+seed=2021
+start_testing_epoch=0
+
+SGL:[hyperparameters]:
+aug_type=ED
+reg=1e-4
+embed_size=64
+n_layers=3
+ssl_reg=0.5
+ssl_ratio=0.1
+ssl_temp=0.2
+ssl_mode=both_side
+lr=0.001
+learner=adam
+adj_type=pre
+epochs=1000
+batch_size=2048
+num_negatives=1
+param_init=xavier_uniform
+stddev=0.01
+verbose=1
+stop_cnt=10
+pretrain_flag=0
+save_flag=0
+
+Command line:
+recommender=SGL
+dataset=amazon-book
+aug_type=ED
+reg=1e-4
+n_layers=3
+ssl_reg=0.5
+ssl_ratio=0.1
+ssl_temp=0.2
+2025-07-16 18:12:24.801: metrics:	Precision@20	Recall@20   	NDCG@20     
+2025-07-16 20:53:35.385: [iter 1 : loss : 7.0303 = 0.6931 + 6.3372 + 0.0000, time: 9670.581768]
+2025-07-16 20:54:08.811: epoch 1:	0.00213627  	0.00451523  	0.00371186  
+2025-07-16 20:54:08.812: Find a better model.
+2025-07-16 23:32:36.145: [iter 2 : loss : 7.0206 = 0.6929 + 6.3277 + 0.0000, time: 9507.170350]
+2025-07-16 23:33:11.056: epoch 2:	0.00276416  	0.00594726  	0.00486905  
+2025-07-16 23:33:11.057: Find a better model.
+2025-07-17 02:08:26.102: [iter 3 : loss : 7.0193 = 0.6927 + 6.3266 + 0.0000, time: 9314.896972]
+2025-07-17 02:09:06.323: epoch 3:	0.00297598  	0.00643472  	0.00532571  
+2025-07-17 02:09:06.323: Find a better model.
+2025-07-17 04:44:50.675: [iter 4 : loss : 7.0184 = 0.6923 + 6.3261 + 0.0000, time: 9344.148902]
+2025-07-17 04:45:16.760: epoch 4:	0.00288574  	0.00634632  	0.00510502  
+2025-07-17 07:20:37.854: [iter 5 : loss : 7.0176 = 0.6918 + 6.3258 + 0.0000, time: 9320.945611]
+2025-07-17 07:21:07.936: epoch 5:	0.00212487  	0.00482880  	0.00380622  
+2025-07-17 09:52:41.618: [iter 6 : loss : 7.0165 = 0.6906 + 6.3260 + 0.0000, time: 9093.575015]
+2025-07-17 09:53:19.900: epoch 6:	0.00121582  	0.00288581  	0.00225492  
