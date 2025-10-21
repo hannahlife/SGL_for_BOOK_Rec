@@ -64,12 +64,22 @@ if __name__ == "__main__":
 
     recommender = Recommender(config)
     recommender.train_model()
-
-        # 训练完成后生成 Top-1 类别文件
-        # 训练完成后生成 Top-1 类别文件
-    test_data_path = os.path.join(data_dir, "my_book_2class.test")
+    
+    # 训练完成后生成 Top-1 类别推荐文件
+    print("\n" + "="*50)
+    print("开始生成用户推荐结果...")
+    print("="*50)
+    
+    # 使用相对路径指向测试数据
+    test_data_path = "dataset/my_book_2class/my_book_2class.test"
+    output_file = "dataset/my_book_2class/user_top1_class.csv"
+    
     recommender.generate_top1_class_for_test(
         test_data_path, 
-        output_file=os.path.join(data_dir, "user_top1_class.csv")
+        output_file=output_file
     )
     
+    print("\n" + "="*50)
+    print(f"推荐结果已成功保存到: {output_file}")
+    print("="*50)
+
